@@ -1,0 +1,14 @@
+# Code::Blocks stuff
+*.cbp
+*.depend
+*.layout
+
+# vim
+.*.sw[a-p]
+
+# various other potential build files
+/bin
+/obj
+
+# Mac filesystem dust
+/.DS_Store

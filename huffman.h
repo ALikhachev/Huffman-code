@@ -39,7 +39,7 @@ void decode(FILE*, FILE*);
   *
   * Args: string to encode.
   */
-Tree* generateHuffmanTree(char*);
+Tree* generateHuffmanTree(FILE*);
 
 /**
   * auxiliary function
@@ -49,16 +49,16 @@ Tree* linkTreeNodes(Tree*[], int);
 /**
   * Returns char by it's code in Huffman's tree.
   *
-  * Args: pointer to the root of Huffmans tree, code (as char array).
+  * Args: pointer to the file, pointer to the root of Huffmans tree.
   */
-char findCharByCode(Tree*, char*);
+int decodeByte(FILE*, Tree*);
 
 /**
   * Returns code for char in Huffman's tree.
   *
   * Args: pointer to the root of Huffmans tree, char.
   */
-char* getCode(Tree*, char);
+char* getCode(Tree*, unsigned char);
 
 /**
   * Generates codes for all nodes of Huffman's tree (left = 0, right = 1)
@@ -66,13 +66,6 @@ char* getCode(Tree*, char);
   * Args: pointer to the root of Huffmans tree.
   */
 void generateCodes(Tree*);
-
-/**
-  * Count amounts of joins of each char of input string and write them to the int array (specified as the second arg).
-  *
-  * Args: string, int array.
-  */
-void countJoins(char*, int*);
 
 /**
   * Writes Huffman's tree to file as sequence of bits.

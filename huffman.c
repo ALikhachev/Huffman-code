@@ -31,61 +31,38 @@ int doHuffman(char* infilename, char* outfilename, int mode) {
 }
 
 void encode(FILE *infile, FILE *outfile) {
-    char *input, *curCode;
+    char *curCode;
     int len, i;
     Tree *tree;
 
     fseek(infile, 0L, SEEK_END);
     len = ftell(infile);
     rewind(infile);
-    input = (char*) malloc(sizeof(char) * len + 1);
-    if (1 != fread(input, len, sizeof(char), infile)) {
-        fclose(infile);
-        free(input);
-        fputs("Entire read fails\n", stderr);
-        exit(1);
-    }
-    input[len] = 0;
-    tree = generateHuffmanTree(input);
+    tree = generateHuffmanTree(infile);
+    rewind(infile);
     writeHeader(outfile, tree, len);
     for (i = 0; i < len; i++) {
-        curCode = getCode(tree, input[i]);
+        curCode = getCode(tree, fgetc(infile));
         writeCode(outfile, convertCode(curCode), strlen(curCode));
     }
 
     writeCode(outfile, 0, 8 - getCount());
 
-    free(input);
-
     destroyTree(tree);
 }
 
 void decode(FILE *infile, FILE *outfile) {
-    char *curCode, resByte, buffer;
-    int bit, codeLen = 0, writtenLen = 0, limit = 0;
+    char *curCode;
+    int resByte, buffer;
+    int i, bit, codeLen = 0, writtenLen = 0, length = 0;
     Tree *tree;
 
-    readHeader(infile, &tree, &limit);
-    while ((buffer = fgetc(infile)) != EOF) {
-        curCode = malloc(sizeof(char) * 256);
-        bit = 0;
-        while (bit < 8) {
-            if (codeLen > 255) {
-                fputs("Incorrect input!\n", stderr);
-                exit(1);
-            }
-            curCode[codeLen++] = getBit(buffer, 7 - bit++);
-            curCode[codeLen] = 0;
-            resByte = findCharByCode(tree, curCode);
-            if (resByte) {
-                codeLen = 0;
-                fputc(resByte, outfile);
-                if (++writtenLen >= limit) break;
-            }
-        }
-        free(curCode);
+    readHeader(infile, &tree, &length);
+    setCount(0);
+    for (i = 0; i < length; i++) {
+        int ch = decodeByte(infile, tree);
+        fputc(ch, outfile);
     }
-
     destroyTree(tree);
 }
 
@@ -132,23 +109,17 @@ Tree* readHuffmansTree(FILE* file) {
     return node;
 }
 
-char findCharByCode(Tree* tree, char* code) {
-    if (tree != NULL) {
-        if (strcmp(tree->code, code) == 0) {
-            return tree->value;
-        } else {
-            if (findCharByCode(tree->left, code) != 0) {
-                return findCharByCode(tree->left, code);
-            }
-            if (findCharByCode(tree->right, code) != 0) {
-                return findCharByCode(tree->right, code);
-            }
-        }
-    }
-    return 0;
+int decodeByte(FILE* in, Tree *tree) {
+  if (tree->value != 0) { // Лист
+    return tree->value;
+  } else if (readBit(in)) {
+      return decodeByte(in, tree->right);
+  } else {
+      return decodeByte(in, tree->left);
+  }
 }
 
-char *getCode(Tree* tree, char c) {
+char *getCode(Tree* tree, unsigned char c) {
     if (tree != NULL) {
         if (tree->value == c) {
             return tree->code;
@@ -164,12 +135,14 @@ char *getCode(Tree* tree, char c) {
     return NULL;
 }
 
-Tree* generateHuffmanTree(char* input) {
+Tree* generateHuffmanTree(FILE *infile) {
     int *joins = (int*) calloc(256, sizeof(int));
     int notNull = 0, freq, i;
-    char c;
+    unsigned char c;
 
-    countJoins(input, joins);
+    while ((c = (unsigned char) fgetc(infile)) != (unsigned char) EOF) {
+        joins[(int) c]++;
+    }
     for (i = 0; i < 256; i++) {
         if (joins[i] != 0) notNull++;
     }
@@ -197,7 +170,7 @@ Tree* linkTreeNodes(Tree *nodes[], int k) {
     int i, j;
     Tree *node = (Tree*) malloc(sizeof(Tree));
     node->freq = nodes[k - 1]->freq + nodes[k - 2]->freq;
-    node->value = 0;
+    node->value = (unsigned char) 0;
     node->code[0] = 0;
     node->left = nodes[k - 1];
     node->right = nodes[k - 2];
@@ -230,13 +203,6 @@ void generateCodes(Tree *root) {
         strcat(root->right->code, "1");
         generateCodes(root->right);
         // if (root->right->value != '\0') printf("Code of \'%d = %c\' is now: %s\n", root->right->value, root->right->value, root->right->code);
-    }
-}
-
-void countJoins(char *input, int *joins) {
-    int i;
-    for (i = 0; i < strlen(input); i++) {
-        joins[(int)input[i]]++;
     }
 }
 

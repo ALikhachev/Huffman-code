@@ -63,20 +63,6 @@ void writeCode(FILE*, int, int);
 char getBit(unsigned char, int);
 
 /**
-  * Initiate empty string (char array).
-  *
-  * Args: no.
-  */
-char* initString();
-
-/**
-  * Append char to char array.
-  *
-  * Args: char array, char to append.
-  */
-char* appendCharToArray(const char*, char);
-
-/**
   * Writes 4 bytes of integer to file.
   *
   * Args: pointer to file, integer number.

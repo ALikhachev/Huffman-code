@@ -27,16 +27,16 @@ int getCount() {
 }
 
 void writeCode(FILE* out, int code, int length) {
-    int mask;
-    for (int i = length; i > 0; i--) {
+    int i, mask;
+    for (i = length; i > 0; i--) {
         mask = 1 << (i - 1);
         writeBit(out, code & mask);
     }
 }
 
 int convertCode(char *code) {
-    int res = 0;
-    for (int i = 0; i < strlen(code); i++) {
+    int i, res = 0;
+    for (i = 0; i < strlen(code); i++) {
         res = res << 1;
         if (code[i] == '1') {
             res |= 1;
@@ -57,8 +57,8 @@ int readBit(FILE* in) {
 }
 
 int readByte(FILE* in) {
-    int res = 0;
-    for (int i = 0; i < 8; i++) {
+    int i, res = 0;
+    for (i = 0; i < 8; i++) {
         res = res << 1;
         if (readBit(in)) {
             res |= 1;
@@ -71,25 +71,9 @@ char getBit(unsigned char byte, int offset) {
     return (((byte >> offset) & 0x1) == 0x1) ? '1' : '0';
 }
 
-char* initString() {
-    char *str = malloc(1);
-    str[0] = 0;
-    return str;
-}
-
-char* appendCharToArray(const char *str, char c) {
-    int len = strlen(str);
-    char *result = malloc(strlen(str) + 2);
-    strcpy(result, str);
-    result[len] = c;
-    result[len + 1] = 0;
-    free((void *)str);
-    return result;
-}
-
 char findMax(int *array, int size, int *frequency) {
-    int max = array[0], maxIndex = 0;
-    for (int i = 0; i < size; i++) {
+    int i, max = array[0], maxIndex = 0;
+    for (i = 0; i < size; i++) {
         if (array[i] > max) {
             max = array[i];
             maxIndex = i;

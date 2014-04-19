@@ -14,10 +14,10 @@ struct TreeNode {
 
 int doHuffman(char* infilename, char* outfilename, int mode) {
     FILE *infile, *outfile;
-    if (!(infile = fopen(infilename, mode == 0 ? "r" : "rb"))) {
+    if (!(infile = fopen(infilename, "rb"))) {
         return 1;
     }
-    if (!(outfile = fopen(outfilename, mode == 0 ? "wb" : "w"))) {
+    if (!(outfile = fopen(outfilename, "wb"))) {
         return 2;
     }
     if (mode == 0) {
@@ -31,18 +31,24 @@ int doHuffman(char* infilename, char* outfilename, int mode) {
 }
 
 void encode(FILE *infile, FILE *outfile) {
-    char *input = initString(), *curCode;
-    char readbuffer = 0;
-    int len;
+    char *input, *curCode;
+    int len, i;
     Tree *tree;
 
-    while((readbuffer = fgetc(infile)) != EOF) {
-        input = appendCharToArray(input, readbuffer);
+    fseek(infile, 0L, SEEK_END);
+    len = ftell(infile);
+    rewind(infile);
+    input = (char*) malloc(sizeof(char) * len + 1);
+    if (1 != fread(input, len, sizeof(char), infile)) {
+        fclose(infile);
+        free(input);
+        fputs("Entire read fails\n", stderr);
+        exit(1);
     }
-    len = strlen(input);
+    input[len] = 0;
     tree = generateHuffmanTree(input);
     writeHeader(outfile, tree, len);
-    for (int i = 0; i < len; i++) {
+    for (i = 0; i < len; i++) {
         curCode = getCode(tree, input[i]);
         writeCode(outfile, convertCode(curCode), strlen(curCode));
     }
@@ -55,31 +61,31 @@ void encode(FILE *infile, FILE *outfile) {
 }
 
 void decode(FILE *infile, FILE *outfile) {
-    char *curCode = initString();
-    char resByte, buffer;
+    char *curCode, resByte, buffer;
     int bit, codeLen = 0, writtenLen = 0, limit = 0;
     Tree *tree;
 
     readHeader(infile, &tree, &limit);
     while ((buffer = fgetc(infile)) != EOF) {
+        curCode = malloc(sizeof(char) * 256);
         bit = 0;
         while (bit < 8) {
-            if (codeLen++ > 32) {
-                printf("May be Incorrect input?\n");
+            if (codeLen > 255) {
+                fputs("Incorrect input!\n", stderr);
+                exit(1);
             }
-            curCode = appendCharToArray(curCode, getBit(buffer, 7 - bit++));
+            curCode[codeLen++] = getBit(buffer, 7 - bit++);
+            curCode[codeLen] = 0;
             resByte = findCharByCode(tree, curCode);
             if (resByte) {
                 codeLen = 0;
                 fputc(resByte, outfile);
-                free(curCode);
-                curCode = initString();
                 if (++writtenLen >= limit) break;
             }
         }
+        free(curCode);
     }
 
-    free(curCode);
     destroyTree(tree);
 }
 
@@ -160,18 +166,18 @@ char *getCode(Tree* tree, char c) {
 
 Tree* generateHuffmanTree(char* input) {
     int *joins = (int*) calloc(256, sizeof(int));
-    int notNull = 0;
+    int notNull = 0, freq, i;
+    char c;
 
     countJoins(input, joins);
-    for (int i = 0; i < 256; i++) {
+    for (i = 0; i < 256; i++) {
         if (joins[i] != 0) notNull++;
     }
     Tree **nodes = malloc(notNull * sizeof(Tree*));
     Tree *root;
 
-    for (int i = 0; i < notNull; i++) {
-        int freq;
-        char c = findMax(joins, 256, &freq);
+    for (i = 0; i < notNull; i++) {
+        c = findMax(joins, 256, &freq);
         Tree *node = (Tree*) malloc(sizeof(Tree));
         node->freq = freq;
         node->left = NULL;
@@ -188,6 +194,7 @@ Tree* generateHuffmanTree(char* input) {
 }
 
 Tree* linkTreeNodes(Tree *nodes[], int k) {
+    int i, j;
     Tree *node = (Tree*) malloc(sizeof(Tree));
     node->freq = nodes[k - 1]->freq + nodes[k - 2]->freq;
     node->value = 0;
@@ -199,9 +206,9 @@ Tree* linkTreeNodes(Tree *nodes[], int k) {
         return node;
     } else {
         // Вставляем в нужное место получившийся узел
-        for (int i = 0; i < k; i++)
+        for (i = 0; i < k; i++)
             if (node->freq > nodes[i]->freq) {
-                for (int j = k - 1; j > i; j--) {
+                for (j = k - 1; j > i; j--) {
                     nodes[j] = nodes[j - 1];
                 }
                 nodes[i] = node;
@@ -227,7 +234,8 @@ void generateCodes(Tree *root) {
 }
 
 void countJoins(char *input, int *joins) {
-    for (int i = 0; i < strlen(input); i++) {
+    int i;
+    for (i = 0; i < strlen(input); i++) {
         joins[(int)input[i]]++;
     }
 }

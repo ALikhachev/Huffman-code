@@ -37,9 +37,9 @@ void decode(FILE*, FILE*);
 /**
   * Generates Huffman's tree (for encoding).
   *
-  * Args: string to encode.
+  * Args: string to encode, length of input.
   */
-Tree* generateHuffmanTree(FILE*);
+Tree* generateHuffmanTree(FILE*, int);
 
 /**
   * auxiliary function

@@ -6,6 +6,18 @@
 unsigned char buffer = 0; // Буфер вывода
 int count = 0; // Кол-во бит в буфере
 
+char findMax(int*, int, int*);
+int convertCode(char*);
+void setCount(int);
+int getCount();
+void writeBit(FILE*, int);
+int readBit(FILE*);
+int readByte(FILE*);
+void writeCode(FILE*, int, int);
+char getBit(unsigned char, int);
+void writeInt(FILE*, int);
+int readInt(FILE*);
+
 void writeBit(FILE* out, int value)
 {
   buffer = buffer << 1;
@@ -57,12 +69,13 @@ int convertCode(char *code)
 
 int readBit(FILE* in)
 {
+  int res, readed;
   if (count == 0)
     {
-      int readed = fread(&buffer, 1, 1, in);
+      readed = fread(&buffer, 1, 1, in);
       count = readed * 8;
     }
-  int res = buffer & 0x80; // Выбираем старший бит
+  res = buffer & 0x80; // Выбираем старший бит
   buffer = buffer << 1;
   count--;
   return res;

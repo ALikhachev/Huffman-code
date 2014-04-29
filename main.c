@@ -13,10 +13,13 @@ const char *messages[] =
 
 int main(int argc, char *argv[])
 {
+  int mode;
+  char *infilename;
+  char *outfilename;
+  mode = (argc > 1) ? (!strcmp(argv[1], "e") ? 0 : 1) : 0;
+  infilename = argc > 2 ? argv[2] : "input.txt";
+  outfilename = argc > 3 ? argv[3] : "output.txt";
   setlocale(LC_ALL, "");
-  int mode = (argc > 1) ? (!strcmp(argv[1], "e") ? 0 : 1) : 0;
-  char *infilename = argc > 2 ? argv[2] : "input.txt";
-  char *outfilename = argc > 3 ? argv[3] : "output.txt";
   printf("Input file: %s\n", infilename);
   printf("Output file: %s\n", outfilename);
   printf("Mode: %s\n\n", mode == 0 ? "encoding" : "decoding");

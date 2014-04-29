@@ -13,6 +13,20 @@ struct TreeNode
   struct TreeNode *right;
 };
 
+int doHuffman(char*, char*, int);
+void encode(FILE*, FILE*);
+void decode(FILE*, FILE*);
+Tree* generateHuffmanTree(FILE*, int);
+Tree* linkTreeNodes(Tree*[], int);
+int decodeByte(FILE*, Tree*);
+char* getCode(Tree*, unsigned char);
+void generateCodes(Tree*);
+void writeHuffmansTree(FILE*, Tree*);
+Tree* readHuffmansTree(FILE*);
+void writeHeader(FILE*, Tree*, int);
+void readHeader(FILE*, Tree**, int*);
+void destroyTree(Tree*);
+
 int doHuffman(char* infilename, char* outfilename, int mode)
 {
   FILE *infile, *outfile;
@@ -40,7 +54,7 @@ int doHuffman(char* infilename, char* outfilename, int mode)
 void encode(FILE *infile, FILE *outfile)
 {
   char *curCode;
-  int len, i;
+  int len, i, j, n;
   Tree *tree;
 
   fseek(infile, 0L, SEEK_END);
@@ -51,11 +65,10 @@ void encode(FILE *infile, FILE *outfile)
   writeHeader(outfile, tree, len);
   for (i = 0; i < len; i++)
     {
-      unsigned char buffer = (unsigned char) fgetc(infile);
-      curCode = getCode(tree, buffer);
+      fflush(stdout);
+      curCode = getCode(tree, (unsigned char) fgetc(infile));
       writeCode(outfile, convertCode(curCode), strlen(curCode));
     }
-
   writeCode(outfile, 0, 8 - getCount());
 
   destroyTree(tree);
@@ -63,14 +76,14 @@ void encode(FILE *infile, FILE *outfile)
 
 void decode(FILE *infile, FILE *outfile)
 {
-  int i, length = 0;
+  int i, ch, length = 0;
   Tree *pTree;
 
   readHeader(infile, &pTree, &length);
   setCount(0);
   for (i = 0; i < length; i++)
     {
-      int ch = decodeByte(infile, pTree);
+      ch = decodeByte(infile, pTree);
       fputc(ch, outfile);
     }
   destroyTree(pTree);
@@ -171,27 +184,31 @@ char *getCode(Tree* tree, unsigned char c)
 
 Tree* generateHuffmanTree(FILE *infile, int len)
 {
-  int *joins = (int*) calloc(256, sizeof(int));
-  int notNull = 0, freq, i = 0;
+  int *joins;
+  int notNull, freq, i;
   unsigned char c;
+  Tree **nodes;
+  Tree *root;
+  Tree *node;
 
+  i = 0, joins = (int*) calloc(256, sizeof(int));;
   while (i++ < len)
     {
       joins[(int) fgetc(infile)]++;
     }
 
+  notNull = 0;
   for (i = 0; i < 256; i++)
     {
       if (joins[i] != 0) notNull++;
     }
 
-  Tree **nodes = malloc(notNull * sizeof(Tree*));
-  Tree *root;
+  nodes = malloc(notNull * sizeof(Tree*));
 
   for (i = 0; i < notNull; i++)
     {
       c = findMax(joins, 256, &freq);
-      Tree *node = (Tree*) malloc(sizeof(Tree));
+      node = (Tree*) malloc(sizeof(Tree));
       node->freq = freq;
       node->left = NULL;
       node->right = NULL;
@@ -209,7 +226,8 @@ Tree* generateHuffmanTree(FILE *infile, int len)
 Tree* linkTreeNodes(Tree *nodes[], int k)
 {
   int i, j;
-  Tree *node = (Tree*) malloc(sizeof(Tree));
+  Tree *node;
+  node = (Tree*) malloc(sizeof(Tree));
   node->freq = nodes[k - 1]->freq + nodes[k - 2]->freq;
   node->value = -1;
   node->code[0] = 0;

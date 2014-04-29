@@ -54,7 +54,7 @@ int doHuffman(char* infilename, char* outfilename, int mode)
 void encode(FILE *infile, FILE *outfile)
 {
   char *curCode;
-  int len, i, j, n;
+  int len, i;
   Tree *tree;
 
   fseek(infile, 0L, SEEK_END);
@@ -65,7 +65,6 @@ void encode(FILE *infile, FILE *outfile)
   writeHeader(outfile, tree, len);
   for (i = 0; i < len; i++)
     {
-      fflush(stdout);
       curCode = getCode(tree, (unsigned char) fgetc(infile));
       writeCode(outfile, convertCode(curCode), strlen(curCode));
     }

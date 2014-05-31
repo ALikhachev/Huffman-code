@@ -2,20 +2,6 @@
 #define UTILS_H_INCLUDED
 
 /**
-  * Finds max element of integer array and index of that element.
-  *
-  * Args: int array, array's size, pointer to int (to write index of max element).
-  */
-char findMax(int*, int, int*);
-
-/**
-  * Converts code from string representation to int.
-  *
-  * Args: Code of a symbol as char sequence.
-  */
-int convertCode(char*);
-
-/**
   * For internal use (sets the buffer counter).
   *
   */
@@ -26,13 +12,6 @@ void setCount(int);
   *
   */
 int getCount();
-
-/**
-  * Writes one bit to file.
-  *
-  * Args: pointer to file, int 0 or 1 appropriate to bit value.
-  */
-void writeBit(FILE*, int);
 
 /**
   * Reads one bit from file.
@@ -49,11 +28,25 @@ int readBit(FILE*);
 int readByte(FILE*);
 
 /**
+  * Writes one bit to file.
+  *
+  * Args: pointer to file, int 0 or 1 appropriate to bit value.
+  */
+void writeBit(FILE*, int);
+
+/**
   * Writes specified number of bits to file.
   *
-  * Args: pointer to file, sequence of bits in int, number of bits.
+  * Args: pointer to file, sequence of bits in long, number of bits.
   */
-void writeCode(FILE*, int, int);
+void writeCode(FILE*, long, int);
+
+/**
+  * Finds max element of integer array and index of that element.
+  *
+  * Args: int array, array's size, pointer to int (to write index of max element).
+  */
+char findMax(int*, int, int*);
 
 /**
   * Returns a specified bit of specified byte (as characters '0' and '1').
@@ -63,6 +56,13 @@ void writeCode(FILE*, int, int);
 char getBit(unsigned char, int);
 
 /**
+  * Reads 4 bytes of integer from file.
+  *
+  * Args: pointer to file.
+  */
+int readInt(FILE*);
+
+/**
   * Writes 4 bytes of integer to file.
   *
   * Args: pointer to file, integer number.
@@ -70,10 +70,10 @@ char getBit(unsigned char, int);
 void writeInt(FILE*, int);
 
 /**
-  * Reads 4 bytes of integer from file.
+  * Converts code from string representation to long.
   *
-  * Args: pointer to file.
+  * Args: Code of a symbol as char sequence.
   */
-int readInt(FILE*);
+long convertCode(char*);
 
 #endif // UTILS_H_INCLUDED

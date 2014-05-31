@@ -3,35 +3,24 @@
 #include <string.h>
 #include "utils.h"
 
-unsigned char buffer = 0; // Буфер вывода
-int count = 0; // Кол-во бит в буфере
+/* Buffer */
+unsigned char buffer = 0;
+int count = 0;
 
-char findMax(int*, int, int*);
-int convertCode(char*);
 void setCount(int);
 int getCount();
-void writeBit(FILE*, int);
 int readBit(FILE*);
 int readByte(FILE*);
-void writeCode(FILE*, int, int);
-char getBit(unsigned char, int);
-void writeInt(FILE*, int);
-int readInt(FILE*);
+void writeBit(FILE*, int);
+void writeCode(FILE*, long, int);
 
-void writeBit(FILE* out, int value)
-{
-  buffer = buffer << 1;
-  if (value)
-    {
-      buffer |= 1;
-    }
-  count++;
-  if (count == 8)
-    {
-      fwrite(&buffer, 1, 1, out);
-      count = 0;
-    }
-}
+char findMax(int*, int, int*);
+char getBit(unsigned char, int);
+int readInt(FILE*);
+void writeInt(FILE*, int);
+long convertCode(char*);
+
+/* Implementations */
 
 void setCount(int v)
 {
@@ -43,30 +32,6 @@ int getCount()
   return count;
 }
 
-void writeCode(FILE* out, int code, int length)
-{
-  int i, mask;
-  for (i = length; i > 0; i--)
-    {
-      mask = 1 << (i - 1);
-      writeBit(out, code & mask);
-    }
-}
-
-int convertCode(char *code)
-{
-  int i, res = 0;
-  for (i = 0; i < strlen(code); i++)
-    {
-      res = res << 1;
-      if (code[i] == '1')
-        {
-          res |= 1;
-        }
-    }
-  return res;
-}
-
 int readBit(FILE* in)
 {
   int res, readed;
@@ -75,7 +40,7 @@ int readBit(FILE* in)
       readed = fread(&buffer, 1, 1, in);
       count = readed * 8;
     }
-  res = buffer & 0x80; // Выбираем старший бит
+  res = buffer & 0x80; // 0x80 == _1_0000000
   buffer = buffer << 1;
   count--;
   return res;
@@ -95,9 +60,30 @@ int readByte(FILE* in)
   return res;
 }
 
-char getBit(unsigned char byte, int offset)
+void writeBit(FILE* out, int value)
 {
-  return (((byte >> offset) & 0x1) == 0x1) ? '1' : '0';
+  buffer = buffer << 1;
+  if (value)
+    {
+      buffer |= 1;
+    }
+  count++;
+  if (count == 8)
+    {
+      fwrite(&buffer, 1, 1, out);
+      count = 0;
+    }
+}
+
+void writeCode(FILE* out, long code, int length)
+{
+  size_t i;
+  long mask;
+  for (i = length; i > 0; i--)
+    {
+      mask = 1 << (i - 1);
+      writeBit(out, code & mask);
+    }
 }
 
 char findMax(int *array, int size, int *frequency)
@@ -116,9 +102,9 @@ char findMax(int *array, int size, int *frequency)
   return (char) maxIndex;
 }
 
-void writeInt(FILE *file, int value)
+char getBit(unsigned char byte, int offset)
 {
-  fwrite(&value, sizeof(int), 1, file);
+  return (((byte >> offset) & 0x1) == 0x1) ? '1' : '0';
 }
 
 int readInt(FILE *file)
@@ -126,4 +112,24 @@ int readInt(FILE *file)
   int value;
   fread(&value, sizeof(int), 1, file);
   return value;
+}
+
+void writeInt(FILE *file, int value)
+{
+  fwrite(&value, sizeof(int), 1, file);
+}
+
+long convertCode(char *code)
+{
+  size_t i;
+  long res = 0;
+  for (i = 0; i < strlen(code); i++)
+    {
+      res = res << 1;
+      if (code[i] == '1')
+        {
+          res |= 1;
+        }
+    }
+  return res;
 }

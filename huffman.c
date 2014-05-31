@@ -4,52 +4,39 @@
 #include "huffman.h"
 #include "utils.h"
 
-struct TreeNode
+typedef struct TreeNode
 {
   char code[256];
   int freq;
   int value;
   struct TreeNode *left;
   struct TreeNode *right;
-};
+} Tree;
 
-int doHuffman(char*, char*, int);
+/* Encoding functions */
 void encode(FILE*, FILE*);
-void decode(FILE*, FILE*);
+void encodeQuick(FILE*, FILE*);
+
+char* getCode(Tree*, unsigned char);
 Tree* generateHuffmanTree(FILE*, int);
 Tree* linkTreeNodes(Tree*[], int);
-int decodeByte(FILE*, Tree*);
-char* getCode(Tree*, unsigned char);
 void generateCodes(Tree*);
-void writeHuffmansTree(FILE*, Tree*);
-Tree* readHuffmansTree(FILE*);
+void generateHuffmanTable(char***, Tree*);
 void writeHeader(FILE*, Tree*, int);
+void writeHuffmansTree(FILE*, Tree*);
+
+/* Decoding functions */
+void decode(FILE*, FILE*);
+
+int decodeByte(FILE*, Tree*);
+Tree* readHuffmansTree(FILE*);
 void readHeader(FILE*, Tree**, int*);
+
+/* E & D both */
+int doHuffman(char*, char*, int);
 void destroyTree(Tree*);
 
-int doHuffman(char* infilename, char* outfilename, int mode)
-{
-  FILE *infile, *outfile;
-  if (!(infile = fopen(infilename, "rb")))
-    {
-      return 1;
-    }
-  if (!(outfile = fopen(outfilename, "wb")))
-    {
-      return 2;
-    }
-  if (mode == 0)
-    {
-      encode(infile, outfile);
-    }
-  else
-    {
-      decode(infile, outfile);
-    }
-  fclose(infile);
-  fclose(outfile);
-  return 0;
-}
+/* Encoding functions implementations */
 
 void encode(FILE *infile, FILE *outfile)
 {
@@ -73,91 +60,36 @@ void encode(FILE *infile, FILE *outfile)
   destroyTree(tree);
 }
 
-void decode(FILE *infile, FILE *outfile)
+void encodeQuick(FILE *infile, FILE *outfile)
 {
-  int i, ch, length = 0;
-  Tree *pTree;
+  char *curCode, **huffman_table;
+  int len, i;
+  Tree *tree;
 
-  readHeader(infile, &pTree, &length);
-  setCount(0);
-  for (i = 0; i < length; i++)
+  fseek(infile, 0L, SEEK_END);
+  len = ftell(infile);
+  rewind(infile);
+  tree = generateHuffmanTree(infile, len);
+  rewind(infile);
+  writeHeader(outfile, tree, len);
+
+  huffman_table = (char**) malloc(256 * sizeof(char*));
+  generateHuffmanTable(&huffman_table, tree);
+  for (i = 0; i < len; i++)
     {
-      ch = decodeByte(infile, pTree);
-      fputc(ch, outfile);
+      int buf = (int) fgetc(infile);
+      curCode = huffman_table[buf];
+      writeCode(outfile, convertCode(curCode), strlen(curCode));
     }
-  destroyTree(pTree);
+  writeCode(outfile, 0, 8 - getCount());
+  for (i = 0; i < 256 * sizeof(char*); i++) {
+    free(huffman_table[i]);
+  }
+  free(huffman_table);
+  destroyTree(tree);
 }
 
-
-
-void writeHeader(FILE *file, Tree *pTree, int length)
-{
-  writeInt(file, length);
-  writeHuffmansTree(file, pTree);
-  writeCode(file, 0, 8 - getCount());
-}
-
-void readHeader(FILE *file, Tree **ppTree, int *length)
-{
-  *length = readInt(file);
-  *ppTree = readHuffmansTree(file);
-  generateCodes(*ppTree);
-}
-
-void writeHuffmansTree(FILE* file, Tree *pTree)
-{
-  // Нет нужды проверять каждое поддерево, т.к. возможны всего 2 случая: узел с двумя поддеревьями или лист
-  if (!pTree->left && !pTree->right)
-    {
-      writeBit(file, 1);
-      writeCode(file, pTree->value, 8);
-    }
-  else
-    {
-      writeBit(file, 0);
-      writeHuffmansTree(file, pTree->left);
-      writeHuffmansTree(file, pTree->right);
-    }
-}
-
-Tree* readHuffmansTree(FILE* file)
-{
-  Tree *node = (Tree*) malloc(sizeof(Tree));
-
-  if (readBit(file))
-    {
-      node->value = readByte(file);
-      node->code[0] = 0;
-      node->left = NULL;
-      node->right = NULL;
-    }
-  else
-    {
-      node->value = -1;
-      node->code[0] = 0;
-      node->left = readHuffmansTree(file);
-      node->right = readHuffmansTree(file);
-    }
-  return node;
-}
-
-int decodeByte(FILE* in, Tree *tree)
-{
-  if (tree->value != -1)   // Лист
-    {
-      return tree->value;
-    }
-  else if (readBit(in))
-    {
-      return decodeByte(in, tree->right);
-    }
-  else
-    {
-      return decodeByte(in, tree->left);
-    }
-}
-
-char *getCode(Tree* tree, unsigned char c)
+char* getCode(Tree* tree, unsigned char c)
 {
   if (tree != NULL)
     {
@@ -261,15 +193,144 @@ void generateCodes(Tree *root)
       strcpy(root->left->code, root->code);
       strcat(root->left->code, "0");
       generateCodes(root->left);
-      // if (root->left->value != '\0') printf("Code of \'%d = %c\' is now: %s\n", root->left->value, root->left->value, root->left->code);
     }
   if (root->right != NULL)
     {
       strcpy(root->right->code, root->code);
       strcat(root->right->code, "1");
       generateCodes(root->right);
-      // if (root->right->value != '\0') printf("Code of \'%d = %c\' is now: %s\n", root->right->value, root->right->value, root->right->code);
     }
+}
+
+void generateHuffmanTable(char ***table, Tree *pTree)
+{
+  if (pTree != NULL)
+    {
+      if (pTree->left || pTree->right)
+        {
+          generateHuffmanTable(table, pTree->left);
+          generateHuffmanTable(table, pTree->right);
+        }
+      else
+        {
+          (*table)[(int)pTree->value] = (char*) malloc((strlen(pTree->code) + 2));
+          strcpy(pTree->code, (*table)[(int)pTree->value]);
+        }
+    }
+}
+
+void writeHeader(FILE *file, Tree *pTree, int length)
+{
+  writeInt(file, length);
+  writeHuffmansTree(file, pTree);
+  writeCode(file, 0, 8 - getCount());
+}
+
+void writeHuffmansTree(FILE* file, Tree *pTree)
+{
+  if (!(pTree->left || pTree->right))
+    {
+      writeBit(file, 1);
+      writeCode(file, pTree->value, 8);
+    }
+  else
+    {
+      writeBit(file, 0);
+      writeHuffmansTree(file, pTree->left);
+      writeHuffmansTree(file, pTree->right);
+    }
+}
+
+/* Decoding functions implementations */
+
+void decode(FILE *infile, FILE *outfile)
+{
+  int i, ch, length = 0;
+  Tree *pTree;
+
+  readHeader(infile, &pTree, &length);
+  setCount(0);
+  for (i = 0; i < length; i++)
+    {
+      ch = decodeByte(infile, pTree);
+      fputc(ch, outfile);
+    }
+  destroyTree(pTree);
+}
+
+int decodeByte(FILE* in, Tree *tree)
+{
+  if (tree->value != -1)
+    {
+      return tree->value;
+    }
+  else if (readBit(in))
+    {
+      return decodeByte(in, tree->right);
+    }
+  else
+    {
+      return decodeByte(in, tree->left);
+    }
+}
+
+Tree* readHuffmansTree(FILE* file)
+{
+  Tree *node = (Tree*) malloc(sizeof(Tree));
+
+  if (readBit(file))
+    {
+      node->value = readByte(file);
+      node->code[0] = 0;
+      node->left = NULL;
+      node->right = NULL;
+    }
+  else
+    {
+      node->value = -1;
+      node->code[0] = 0;
+      node->left = readHuffmansTree(file);
+      node->right = readHuffmansTree(file);
+    }
+  return node;
+}
+
+void readHeader(FILE *file, Tree **ppTree, int *length)
+{
+  *length = readInt(file);
+  *ppTree = readHuffmansTree(file);
+  generateCodes(*ppTree);
+}
+
+/* E & D both */
+
+int doHuffman(char* infilename, char* outfilename, int mode)
+{
+  FILE *infile, *outfile;
+  if (!(infile = fopen(infilename, "rb")))
+    {
+      return 1;
+    }
+  if (!(outfile = fopen(outfilename, "wb")))
+    {
+      return 2;
+    }
+
+  switch (mode)
+    {
+    case 0:
+      encode(infile, outfile);
+      break;
+    case 1:
+      decode(infile, outfile);
+      break;
+    case 2:
+      encodeQuick(infile, outfile);
+      break;
+    }
+  fclose(infile);
+  fclose(outfile);
+  return 0;
 }
 
 void destroyTree(Tree *tree)

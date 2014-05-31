@@ -82,9 +82,6 @@ void encodeQuick(FILE *infile, FILE *outfile)
       writeCode(outfile, convertCode(curCode), strlen(curCode));
     }
   writeCode(outfile, 0, 8 - getCount());
-  for (i = 0; i < 256 * sizeof(char*); i++) {
-    free(huffman_table[i]);
-  }
   free(huffman_table);
   destroyTree(tree);
 }
@@ -213,8 +210,7 @@ void generateHuffmanTable(char ***table, Tree *pTree)
         }
       else
         {
-          (*table)[(int)pTree->value] = (char*) malloc((strlen(pTree->code) + 2));
-          strcpy(pTree->code, (*table)[(int)pTree->value]);
+          (*table)[(int)pTree->value] = pTree->code; // we can use that array as array of pointers to strings from tree nodes, why not?
         }
     }
 }

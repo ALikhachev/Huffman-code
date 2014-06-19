@@ -1,6 +1,10 @@
-Huffman's algorhytm
+Huffman code
 ===================
 
-Program can encode and decode texts using Huffmans' algorhytm.
+Program is designed to use basic archiving algorithm based on Huffman code for encoding & decoding files.
 
-You can specify mode (e for encode or d for decode or qe for fast encode), input file and output file as arguments.
+Usage: `<binname.ext> [mode] [input filename] [output filename]`
+where mode may be:
+                e for encoding
+                qe for fast encoding
+                d for decoding
